@@ -19,7 +19,7 @@ force_install() {
     wget http://download.redis.io/releases/${REDIS_PACKAGE}.tar.gz
     tar -xf ${REDIS_PACKAGE}.tar.gz
     cd ${REDIS_PACKAGE}
-    make && make PREFIX=${REDIS_BIN_DIR_PREFIX} install
+    make && make PREFIX=${REDIS_BIN_DIR_PREFIX} install 
     myecho "install ok"
 }
 
@@ -43,7 +43,11 @@ install() {
 
 start() {
     myecho "start ${REDIS_NAME[$IS_SENTINEL]} ..."
-    ${REDIS_BIN_DIR}/${REDIS_NAME[$IS_SENTINEL]} ${REDIS_CONF_DIR}/redis_${REDIS_PORT}.conf
+    if [ $IS_SENTINEL -eq 0 ]; then
+        ${REDIS_BIN_DIR}/${REDIS_NAME[0]} ${REDIS_CONF_DIR}/redis_${REDIS_PORT}.conf
+    else
+        ${REDIS_BIN_DIR}/${REDIS_NAME[0]} ${REDIS_CONF_DIR}/redis_${REDIS_PORT}.conf --sentinel
+    fi
     myecho "start ${REDIS_NAME[$IS_SENTINEL]} ok"
 }
 
@@ -58,7 +62,7 @@ redis_port is_sentinel redis_bin_dir_prefix redis_conf_dir_prefix redis_version"
 
 if [ $# -lt 6 ]; then
     echo $USAGE
-    #exit
+    exit
 fi
 REDIS_NAME="redis-server redis-sentinel"
 REDIS_NAME=($REDIS_NAME)
