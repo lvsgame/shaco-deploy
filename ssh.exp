@@ -1,7 +1,7 @@
 #!/usr/bin/expect
 if { $argc != 5 } {
     send_user "$argc usage: expect ssh.exp ip port user password command\n"
-    exit
+    exit 1
 }
 
 set ip [lindex $argv 0]
@@ -16,8 +16,8 @@ set prompt "(%|#|\\$) $"
 spawn ssh -l $user $ip -p $port
 expect {
     "Connection refused" {
-        send_user "connect failed\n"
-        exit
+        send_user "ssh connect failed\n"
+        exit 1
     } yes/no { 
         send "yes\r"
         exp_continue
@@ -26,8 +26,8 @@ expect {
         send_user "ssh password\n"
         exp_continue
     } timeout {
-        send_user "timeout\n"
-        exit
+        send_user "ssh timeout\n"
+        exit 1
     } -re $prompt {
         send "$cmd\r"
     }
