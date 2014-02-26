@@ -1,0 +1,27 @@
+#!/usr/bin/expect
+if { $argc != 6 } {
+    send_user "usage: expect scp.exp ip port user password dir source_dir\n"
+    exit
+}
+set ip [lindex $argv 0]
+set port [lindex $argv 1]
+set user [lindex $argv 2]
+set password [lindex $argv 3]
+set dir [lindex $argv 4]
+set source_dir [lindex $argv 5]
+set timeout 30
+
+spawn scp -r -P $port $source_dir $user@$ip:$dir
+expect {
+    yes/no { 
+        send "yes\r"
+        exp_continue
+    } password { 
+        send "$password\r"
+        exp_continue
+    } timeout {
+        send_user "timeout\n"
+        exit
+    } 
+}
+send_user "SCP OK\n"
