@@ -11,20 +11,27 @@ set dir [lindex $argv 4]
 set source_dir [lindex $argv 5]
 set timeout 30
 
+proc error {info} {
+    send_user "\033\[40;31;1m"
+    send_user "\[scp\] $info"
+    send_user "\033\[0m"
+    exit 1
+}
+
 spawn scp -r -P $port $source_dir $user@$ip:$dir
 expect {
     "Connection refused" {
-        send_user "scp connect failed\n"
-        exit 1
+        error "connect failed\n"
     } yes/no { 
         send "yes\r"
         exp_continue
     } password { 
         send "$password\r"
         exp_continue
+    } "lost connection" {
+        error "scp lost connection\n"
     } timeout {
-        send_user "scp timeout\n"
-        exit 1
+        error "timeout\n"
     } 
 }
-send_user "scp ok\n"
+send_user "\n"

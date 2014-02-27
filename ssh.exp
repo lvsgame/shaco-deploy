@@ -13,27 +13,31 @@ set cmd [lindex $argv 4]
 set timeout 30
 set prompt "(%|#|\\$) $"
 
+proc error {info} {
+    send_user "\033\[40;31;1m"
+    send_user "\[ssh\] $info"
+    send_user "\033\[0m"
+    exit 1
+}
+
 spawn ssh -l $user $ip -p $port
 expect {
     "Connection refused" {
-        send_user "ssh connect failed\n"
-        exit 1
+        error "connect failed\n"
     } yes/no { 
         send "yes\r"
         exp_continue
     } password { 
         send "$password\r"
-        send_user "ssh password\n"
         exp_continue
     } timeout {
-        send_user "ssh timeout\n"
-        exit 1
+        error "timeout\n"
     } -re $prompt {
         send "$cmd\r"
     }
 }
 expect {
     -re $prompt {
-        send_user "SSH OK\n"
+        send_user "\n"
     }
 }
