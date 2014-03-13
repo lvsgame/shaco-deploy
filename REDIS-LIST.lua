@@ -4,5 +4,6 @@ REDIS_LIST = {
     -- machine ssh port
     -- redis port
     -- redis type, 0: redis-server 1: redis-sentinal
-    { "192.168.1.140", 1986, 7379, 0 },
+    { "192.168.1.140", 1986, 6379, 0 },
+
 }
