@@ -10,8 +10,8 @@ set user [lindex $argv 2]
 set password [lindex $argv 3]
 set cmd [lindex $argv 4]
 
-set timeout 30
-set prompt "(%|#|\\$) $"
+set timeout -1
+set prompt "(#|\\$) $"
 
 proc error {info} {
     send_user "\033\[40;31;1m"

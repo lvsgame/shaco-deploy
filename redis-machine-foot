@@ -1,0 +1,77 @@
+#!/bin/bash
+source share-foot
+
+INFO_PREFIX=[Redis]
+
+force_install() {
+    cd /tmp
+    info2 "install $REDIS_PACKAGE ..."
+    rm -f  ${REDIS_PACKAGE}.tar.gz
+    rm -rf ${REDIS_PACKAGE}
+    wget http://download.redis.io/releases/${REDIS_PACKAGE}.tar.gz
+    tar -xf ${REDIS_PACKAGE}.tar.gz
+    cd ${REDIS_PACKAGE}
+    make && make PREFIX=${REDIS_DIR_PREFIX} install 
+    info2 "install ok"
+}
+
+install() {
+    if [ -e ${REDIS_BIN_DIR}/redis-server ]; then
+        local ver=`${REDIS_BIN_DIR}/redis-server --version | awk -F' ' '{print $3}'`
+        if [ "$ver" = "v=${REDIS_VERSION}" ]; then
+            info2 "${REDIS_PACKAGE} already install"
+            return
+        fi
+    fi
+    force_install
+}
+
+start() {
+    info2 "start ${REDIS_NAME[$REDIS_TYPE]} ..."
+    if [ $REDIS_TYPE -eq 0 ]; then
+        ${REDIS_BIN_DIR}/${REDIS_NAME[0]} ${REDIS_CONF_DIR}/redis_${REDIS_PORT}.conf
+    else
+        ${REDIS_BIN_DIR}/${REDIS_NAME[0]} ${REDIS_CONF_DIR}/redis_${REDIS_PORT}.conf --sentinel
+    fi
+    info2 "start ${REDIS_NAME[$REDIS_TYPE]} ok"
+}
+
+stop() {
+    info2 "stop ${REDIS_NAME[$REDIS_TYPE]} ..."
+    ${REDIS_BIN_DIR}/redis-cli -p ${REDIS_PORT} -a ${REDIS_AUTH} shutdown
+    info2 "stop ${REDIS_NAME[$REDIS_TYPE]} ok"
+}
+
+USAGE="Usage: redis-foot [install] [start] [stop] 
+redis_port redis_type redis_dir_prefix redis_version redis_auth"
+
+if [ $# -lt 6 ]; then
+    echo $USAGE
+    exit
+fi
+REDIS_NAME="redis-server redis-sentinel"
+REDIS_NAME=($REDIS_NAME)
+CMD=$1
+REDIS_PORT=$2
+REDIS_TYPE=$3
+REDIS_DIR_PREFIX=$4
+REDIS_VERSION=$5
+REDIS_AUTH=$6
+REDIS_BIN_DIR=${REDIS_DIR_PREFIX}/bin
+REDIS_CONF_DIR=${REDIS_DIR_PREFIX}/conf
+REDIS_PACKAGE=redis-${REDIS_VERSION}
+
+case "$CMD" in
+install)
+    install
+    ;;
+start)
+    start
+    ;;
+stop)
+    stop
+    ;;
+*)
+    echo $USAGE
+    ;;
+esac

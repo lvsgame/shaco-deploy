@@ -1,0 +1,28 @@
+#!/bin/bash -e
+
+info1() {
+    echo -en "\033[40;36;1m"
+    echo $INFO_PREFIX $@
+    echo -en "\033[0m"
+}
+
+info2() {
+    echo -en "\033[40;32;1m"
+    echo $INFO_PREFIX $@
+    echo -en "\033[0m"
+}
+
+error() {
+    echo -en "\033[40;31;1m"
+    echo $INFO_PREFIX $@
+    echo -en "\033[0m"
+}
+
+build_user() {
+    set +e
+    id $1
+    set -e
+    if [ $? -ne 0 ]; then
+        useradd $1 -d /home/$1 -p $2 -s /bin/bash
+    fi
+}

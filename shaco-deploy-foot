@@ -1,0 +1,161 @@
+#!/bin/bash -e
+source share-foot
+
+INFO_PREFIX=[Shaco-deploy]
+
+# deploy to every shaco machine
+SHACO_DEPLOY_MACHINE=shaco-deploy-machine
+REDIS_MACHINE_FOOT=redis-machine-foot
+SERVER_MACHINE_FOOT=server-machine-foot
+NAME="redis-server redis-sentinel"
+REDIS_NAME=($NAME)
+ROOTPASSWD=`cat PASSWD`
+
+read_conf() {
+    #user
+    #passwd
+    #redis version
+    #redis auth
+    TMP=`cat REDIS-CONF`
+    local OLD_IFS=${IFS}
+    IFS=$'\n'
+    a=(${TMP})
+    IFS=${OLD_IFS}
+    if [ ${#a[@]} -ne  4 ]; then
+        error ${#a[@]} 
+        error CONF content error!!!
+        exit 1
+    fi 
+    USER=${a[0]}
+    PASSWD=${a[1]}
+    REDIS_VERSION=${a[2]}
+    REDIS_AUTH=${a[3]}
+}
+
+prepare() {
+    info1 "pack $SHACO_DEPLOY_MACHINE ..."
+    mkdir -p $SHACO_DEPLOY_MACHINE
+    cp $REDIS_MACHINE_FOOT $SHACO_DEPLOY_MACHINE
+    cp share-foot $SHACO_DEPLOY_MACHINE
+    cp -r redis-conf $SHACO_DEPLOY_MACHINE
+    tar -cf $SHACO_DEPLOY_MACHINE.tar $SHACO_DEPLOY_MACHINE
+    info1 "pack $SHACO_DEPLOY_MACHINE ok"
+}
+
+clean() {
+    rm -f $SHACO_DEPLOY_MACHINE.tar
+    rm -rf $SHACO_DEPLOY_MACHINE
+}
+
+build_home() {
+    local ip=$1; port=$2;
+
+    info1 "build home=$USER host=$ip:$port ..."
+    expect ssh.exp $ip $port root shaco@#1986 "id $USER; 
+    if [ $? -ne 0 ]; then 
+        useradd -m -s /bin/bash $USER;echo -e '$PASSWD\\n$PASSWD' |passwd $USER
+    fi"
+    info1 "build home=$USER host=$ip:$port ok"
+}
+
+dist() {
+    local ip=$1; port=$2; redis_port=$3; redis_type=$4
+
+    info1 "dist host=$ip:$port ${REDIS_NAME[$redis_type]}=$redis_port ..."
+    # dist redis-machine-foot && redis sentinel configure
+    expect scp.exp $ip $port $USER $PASSWD $SHACO_DEPLOY_MACHINE_DIR ./$SHACO_DEPLOY_MACHINE.tar
+    expect ssh.exp $ip $port $USER $PASSWD "mkdir -p log && mkdir -p rdb &&
+    cd $SHACO_DEPLOY_MACHINE_DIR &&
+    tar -xf $SHACO_DEPLOY_MACHINE.tar && rm -f $SHACO_DEPLOY_MACHINE.tar &&
+    mkdir -p $REDIS_CONF_DIR &&
+    cp $SHACO_DEPLOY_MACHINE/redis-conf/redis.conf $REDIS_CONF_DIR &&
+    cp $SHACO_DEPLOY_MACHINE/redis-conf/redis_$redis_port.conf $REDIS_CONF_DIR"
+    info1 "dist host=$ip:$port ${REDIS_NAME[$redis_type]}=$redis_port ok"
+}
+
+#cp_redis() {
+    #local ip=$1; port=$2;
+    #expect scp.exp $ip $port $USER $PASSWD /tmp/${REDIS_PACKAGE}.tar.gz ../${REDIS_PACKAGE}.tar.gz
+#}
+
+operate_redis() {
+    local ip=$1; port=$2; redis_port=$3; redis_type=$4; redis_op=$5
+   
+    info1 "$redis_op [host=$ip:$port ${REDIS_NAME[$redis_type]}=$redis_port] ..."
+    expect ssh.exp $ip $port $USER $PASSWD "cd $SHACO_DEPLOY_MACHINE_DIR/$SHACO_DEPLOY_MACHINE && ./$REDIS_MACHINE_FOOT $redis_op $redis_port $redis_type $REDIS_DIR_PREFIX $REDIS_VERSION $REDIS_AUTH"
+    info1 "$redis_op [host=$ip:$port ${REDIS_NAME[$redis_type]}=$redis_port] ok"
+}
+
+install() {
+    build_home $1 $2 
+    dist $@
+    operate_redis $@ install
+}
+
+command() {
+    local proc=$1
+    local redis_op=$2
+
+    #ip
+    #port
+    #redis_port
+    #redis_type (0: redis-server; 1: redis-sentinel)
+    local content=`cat REDIS-LIST`
+    local OLD_IFS=${IFS}
+    IFS=$'\n'
+    list=(${content})
+    IFS=${OLD_IFS}
+   
+    i=0
+    while [ $i -ne ${#list[@]} ]
+    do
+        local one=${list[$i]}
+        local arr=(${one})
+        if [ ${#arr[@]} != 4 ]; then
+            error REDIS-LIST content error!!!
+            exit 1
+        fi
+        $proc ${arr[0]} ${arr[1]} ${arr[2]} ${arr[3]} $redis_op
+        
+        i=$(($i+1))
+    done
+}
+
+USAGE="Usage: shaco-deploy-foot [redis] [install] [dist] [start] [stop]"
+
+read_conf
+
+SHACO_DEPLOY_MACHINE_DIR=/home/$USER
+REDIS_DIR_PREFIX=/home/$USER
+REDIS_BIN_DIR=$REDIS_DIR_PREFIX/bin
+REDIS_CONF_DIR=$REDIS_DIR_PREFIX/conf
+REDIS_PACKAGE=redis-${REDIS_VERSION}
+
+case "$1" in
+redis)
+    case "$2" in
+    dist)
+        prepare
+        command dist
+        clean
+        ;;
+    install)
+        prepare
+        command install
+        clean
+        ;;
+    start)
+        command operate_redis start
+        ;;
+    stop)
+        command operate_redis stop
+        ;;
+    *)
+        echo $USAGE
+        ;;
+    esac
+    ;;
+*)
+    echo $USAGE
+    ;;
+esac

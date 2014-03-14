@@ -9,7 +9,8 @@ set user [lindex $argv 2]
 set password [lindex $argv 3]
 set dir [lindex $argv 4]
 set source_dir [lindex $argv 5]
-set timeout 30
+
+set timeout -1
 
 proc error {info} {
     send_user "\033\[40;31;1m"
