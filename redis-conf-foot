@@ -1,0 +1,43 @@
+#!/bin/bash -e
+
+USAGE="Usage: redis-conf-foot template_port count"
+if [ $# -lt 2 ]; then
+    echo $USAGE
+    exit
+fi
+
+tport=$1
+count=$2
+
+cd redis-conf
+
+i=1
+while [ $i -lt $count ]
+do
+    dport=$(( $tport+$i ))
+    cp redis_$tport.conf redis_$dport.conf
+    sed -i "s/$tport/$dport/g" redis_$dport.conf
+    echo generate redis_$dport.conf
+    i=$(( $i+1 ))
+done
+
+cd ..
+
+rm -f REDIS-LIST
+
+i=0
+while [ $i -lt $count ]
+do
+    dport=$(( $tport+$i ))
+    echo 192.168.1.140 1986 $dport 0 >> REDIS-LIST
+    i=$(($i+1))
+done
+
+i=0
+while [ $i -lt $count ]
+do
+    dport=$(( $tport+$i ))
+    echo -n 127.0.0.1:$dport,
+    i=$(($i+1))
+done
+echo

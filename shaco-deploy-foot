@@ -52,7 +52,7 @@ build_home() {
 
     info1 "build home=$USER host=$ip:$port ..."
     expect ssh.exp $ip $port root shaco@#1986 "id $USER; 
-    if [ $? -ne 0 ]; then 
+    if [ \$? -ne 0 ]; then 
         useradd -m -s /bin/bash $USER;echo -e '$PASSWD\\n$PASSWD' |passwd $USER
     fi"
     info1 "build home=$USER host=$ip:$port ok"
