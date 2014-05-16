@@ -6,6 +6,9 @@ if [ $# -lt 2 ]; then
     exit
 fi
 
+ip=192.168.1.145
+sshport=1986
+auth=shaco@1986#0621
 tport=$1
 count=$2
 
@@ -29,7 +32,7 @@ i=0
 while [ $i -lt $count ]
 do
     dport=$(( $tport+$i ))
-    echo 192.168.1.140 1986 $dport 0 >> REDIS-LIST
+    echo $ip $sshport $dport 0 >> REDIS-LIST
     i=$(($i+1))
 done
 
@@ -38,6 +41,24 @@ while [ $i -lt $count ]
 do
     dport=$(( $tport+$i ))
     echo -n 127.0.0.1:$dport,
+    i=$(($i+1))
+done
+echo
+
+i=0
+while [ $i -lt $count ]
+do
+    dport=$(( $tport+$i ))
+    echo array\(\'name\' \=\> \'user$i\', \'host\' \=\> \'$ip\', \'port\' \=\> $dport, \'auth\' \=\> \'$auth\', \'filter\' \=\> \'*\'\),
+    i=$(($i+1))
+done
+echo
+
+i=0
+while [ $i -lt $count ]
+do
+    dport=$(( $tport+$i ))
+    echo { \"$ip\", $dport },
     i=$(($i+1))
 done
 echo

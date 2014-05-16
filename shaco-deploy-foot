@@ -51,7 +51,12 @@ build_home() {
     local ip=$1; port=$2;
 
     info1 "build home=$USER host=$ip:$port ..."
-    expect ssh.exp $ip $port root shaco@#1986 "id $USER; 
+    expect ssh.exp $ip $port root shaco@#1986 "
+    if [ \`sysctl -n vm.overcommit_memory\` != '1' ]; then
+        echo vm.overcommit_memory = 1 >> /etc/sysctl.conf
+        sysctl -p
+    fi
+    id $USER; 
     if [ \$? -ne 0 ]; then 
         useradd -m -s /bin/bash $USER;echo -e '$PASSWD\\n$PASSWD' |passwd $USER
     fi"
