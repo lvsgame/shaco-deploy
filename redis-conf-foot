@@ -62,3 +62,20 @@ do
     i=$(($i+1))
 done
 echo
+
+rm -f redisadmin.xml
+echo \<?xml version=\"1.0\"?\> >> redisadmin.xml
+echo \<connections\> >> redisadmin.xml
+echo \<connection name=\"acc\" host=\"$ip\" port=\"6380\" auth=\"$auth\" executeTimeout=\"60000\" connectionTimeout=\"60000\" \/\> >> redisadmin.xml
+echo \<connection name=\"useruni\" host=\"$ip\" port=\"6390\" auth=\"$auth\" executeTimeout=\"60000\" connectionTimeout=\"60000\" \/\> >> redisadmin.xml
+echo \<connection name=\"rank\" host=\"$ip\" port=\"6391\" auth=\"$auth\" executeTimeout=\"60000\" connectionTimeout=\"60000\" \/\> >> redisadmin.xml
+i=0
+while [ $i -lt $count ]
+do
+    dport=$(( $tport+$i ))
+    echo \<connection name=\"user$i\" host=\"$ip\" port=\"$dport\" auth=\"$auth\" executeTimeout=\"60000\" connectionTimeout=\"60000\" \/\> >> redisadmin.xml
+    i=$(($i+1)) 
+done
+echo
+echo \<\/connections\> >> redisadmin.xml
+
